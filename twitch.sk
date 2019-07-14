@@ -1,0 +1,41 @@
+on skript load:
+	login to user with token "#Token" with name "TwitchBroadcaster"
+
+discord guild member join seen by "TwitchBroadcaster":
+	discord give role "Members" to user "%event-user%" in guild "%event-guild%" with "TwitchBroadcaster"
+
+every 1 minute:
+	set {_url} to "https://api.twitch.tv/kraken/channels/banestreams/follows/?client_id=vclez2ba3c6gprvgg3urvthb2br60b"
+	replace all "§" in {_url} with "&"
+	send a request to {_url} with headers "User-agent: postbot69420"
+	map json last http response's body to {_twitch::*}
+	discord set game of bot "TwitchBroadcaster" to "Followers : %{_twitch::_total}% | Latest : %{_twitch::follows::1::user::display_name}%"
+	loop {announcementchannels::*}:
+		set {_url} to "https://api.twitch.tv/kraken/streams/%loop-value%/?client_id=vclez2ba3c6gprvgg3urvthb2br60b"
+		replace all "§" in {_url} with "&"
+		send a request to {_url} with headers "User-agent: postbot69420"
+		map json last http response's body to {_stream::%loop-value%::*}
+		if {_stream::%loop-value%::stream::game} is set:
+			if {currentlystreaming::%loop-index%} is not set:
+				set {currentlystreaming::%loop-index%} to true
+				discord send message "%loop-value% is now streaming **%{_stream::%loop-value%::stream::game}%**! Join @ https://www.twitch.tv/%loop-value%" to channel with id "463262682183761920" as bot "TwitchBroadcaster"
+				set {endstreambroadcast::%loop-index%} to true
+		else:
+			if {endstreambroadcast::%loop-index%} is true:
+				set {endstreambroadcast::%loop-index%} to false
+				discord send message "%loop-value%'s Stream has ended. Thank you everyone who joined!" to channel with id "463262682183761920" as bot "TwitchBroadcaster"
+			delete {currentlystreaming::%loop-index%}
+
+on guild message receive seen by "TwitchBroadcaster":
+	set {_args::*} to event-string split at " "
+	set {_command} to {_args::1}
+	if event-channel is "463274899193069569":
+		if {_command} starts with "!announce":
+			set {_text} to "%event-string%"
+			replace all "!announce " with "" in {_text}
+			discord send message "*Beep Boop* I will now announce streams by %{_text}%" to channel with id "463274899193069569" as bot "TwitchBroadcaster"
+			set {announcementchannels::%{_text}%} to "%{_text}%"
+			discord delete message event-message with "TwitchBroadcaster"
+		if {_command} starts with "!list":
+			discord send message "*Beep Boop* I will list all the channels that I will announce : %{announcementchannels::*}%" to channel with id "463274899193069569" as bot "TwitchBroadcaster"
+			discord delete message event-message with "TwitchBroadcaster"

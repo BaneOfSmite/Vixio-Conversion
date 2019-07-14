@@ -1,0 +1,139 @@
+options:
+	URL: http://dreamlo.com/lb/
+
+on guild message receive seen by "Bot":
+	set {_args::*} to event-string split at " "
+	set {_command} to {_args::1}
+	if event-channel is "458386498484436992":
+		if {_command} starts with "/stats":
+			if {_args::2} is not set:
+				create embed "Statistics"
+				set color of embed "Statistics" to "red"
+				add field "Error:", with value "/stats [IGN]", split true to embed "Statistics"
+				send embed "Statistics" to channel "458386498484436992" with "Bot"
+				clear embed "Statistics"
+				stop
+			set {_player} to "%{_args::2}%"
+			send a request to "https://api.mojang.com/users/profiles/minecraft/%{_player}%" with headers "User-agent: postbot69420"
+			map json last http response's body to {_l::*}
+			set {_u::*} to {_l::id} split at ""
+			set {_uu1} to "%{_u::1}%%{_u::2}%%{_u::3}%%{_u::4}%%{_u::5}%%{_u::6}%%{_u::7}%%{_u::8}%"
+			set {_uu2} to "%{_u::9}%%{_u::10}%%{_u::11}%%{_u::12}%"
+			set {_uu3} to "%{_u::13}%%{_u::14}%%{_u::15}%%{_u::16}%"
+			set {_uu4} to "%{_u::17}%%{_u::18}%%{_u::19}%%{_u::20}%"
+			set {_uu5} to "%{_u::21}%%{_u::22}%%{_u::23}%%{_u::24}%%{_u::25}%%{_u::26}%%{_u::27}%%{_u::28}%%{_u::29}%%{_u::30}%%{_u::31}%%{_u::32}%"
+			set {_uuid} to "%{_uu1}%-%{_uu2}%-%{_uu3}%-%{_uu4}%-%{_uu5}%"
+			send a request to "{@URL}5c194152b6398000e0a0caa9/pipe-get/%{_uuid}%" with headers "User-agent: postbot69420"
+			set {_current} to last http response's body
+			if {_current}'s length is more than 10:
+				set {_tempstats::*} to {_current} split at "|"
+				set {_win} to {_tempstats::2} parsed as an integer
+			else:
+				set {_win} to 0
+			send a request to "{@URL}5c1b98ccb6398000e0ab6005/pipe-get/%{_uuid}%" with headers "User-agent: postbot69420"
+			set {_current} to last http response's body
+			if {_current}'s length is more than 10:
+				set {_tempstats::*} to {_current} split at "|"
+				set {_kill} to {_tempstats::2} parsed as an integer
+			else:
+				set {_kill} to 0
+			send a request to "{@URL}5c1b98afb6398000e0ab5f60/pipe-get/%{_uuid}%" with headers "User-agent: postbot69420"
+			set {_current} to last http response's body
+			if {_current}'s length is more than 10:
+				set {_tempstats::*} to {_current} split at "|"
+				set {_death} to {_tempstats::2} parsed as an integer
+			else:
+				set {_death} to 0
+			create embed "Statistics"
+			set title of embed "Statistics" to "Statistics Of %{_args::2}%"
+			set color of embed "Statistics" to "green"
+			add field "Wins", with value "%{_win}%", split true to embed "Statistics"
+			add field "Kills", with value "%{_kill}%", split true to embed "Statistics"
+			add field "Deaths", with value "%{_death}%", split true to embed "Statistics"
+			send embed "Statistics" to channel "458386498484436992" with "Bot"
+			clear embed "Statistics"
+		else if {_command} starts with "/win":
+			create embed "Statistics"
+			set color of embed "Statistics" to "green"
+			set title of embed "Statistics" to "Top 10 Winners"
+			set {_url} to "http://dreamlo.com/lb/5c194152b6398000e0a0caa9/json/10"
+			replace all "§" in {_url} with "&"
+			send a request to {_url} with headers "User-agent: postbot69420"
+			map json last http response's body to {_stats::*}
+			loop 10 times:
+				set {_uuid::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::name}
+				set {_score::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::score}
+				replace all "-" in {_uuid::%loop-number%} with ""
+				send a request to "https://api.mojang.com/user/profiles/%{_uuid::%loop-number%}%/names" with headers "User-agent: postbot69420"
+				map json last http response's body to {_name::%loop-value%::*}
+				loop {_name::%loop-value%::*}:
+					set {_latestname::%loop-value-1%} to {_name::%loop-value-1%::%loop-index%::name}
+				add field "%loop-number%.", with value "%{_latestname::%loop-number%}%: %{_stats::dreamlo::leaderboard::entry::%loop-value%::score}%", split true to embed "Statistics"
+			send embed "Statistics" to channel "458386498484436992" with "Bot"
+			clear embed "Statistics"
+		else if {_command} starts with "/kill":
+			create embed "Statistics"
+			set color of embed "Statistics" to "green"
+			set title of embed "Statistics" to "Top 10 Killers"
+			set {_url} to "http://dreamlo.com/lb/5c1b98ccb6398000e0ab6005/json/10"
+			replace all "§" in {_url} with "&"
+			send a request to {_url} with headers "User-agent: postbot69420"
+			map json last http response's body to {_stats::*}
+			loop 10 times:
+				set {_uuid::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::name}
+				set {_score::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::score}
+				replace all "-" in {_uuid::%loop-number%} with ""
+				send a request to "https://api.mojang.com/user/profiles/%{_uuid::%loop-number%}%/names" with headers "User-agent: postbot69420"
+				map json last http response's body to {_name::%loop-value%::*}
+				loop {_name::%loop-value%::*}:
+					set {_latestname::%loop-value-1%} to {_name::%loop-value-1%::%loop-index%::name}
+				add field "%loop-number%.", with value "%{_latestname::%loop-number%}%: %{_stats::dreamlo::leaderboard::entry::%loop-value%::score}%", split true to embed "Statistics"
+			send embed "Statistics" to channel "458386498484436992" with "Bot"
+			clear embed "Statistics"
+		else if {_command} starts with "/death":
+			create embed "Statistics"
+			set color of embed "Statistics" to "green"
+			set title of embed "Statistics" to "Top 10 Most Deaths"
+			set {_url} to "http://dreamlo.com/lb/5c1b98afb6398000e0ab5f60/json/10"
+			replace all "§" in {_url} with "&"
+			send a request to {_url} with headers "User-agent: postbot69420"
+			map json last http response's body to {_stats::*}
+			loop 10 times:
+				set {_uuid::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::name}
+				set {_score::%loop-number%} to {_stats::dreamlo::leaderboard::entry::%loop-number%::score}
+				replace all "-" in {_uuid::%loop-number%} with ""
+				send a request to "https://api.mojang.com/user/profiles/%{_uuid::%loop-number%}%/names" with headers "User-agent: postbot69420"
+				map json last http response's body to {_name::%loop-value%::*}
+				loop {_name::%loop-value%::*}:
+					set {_latestname::%loop-value-1%} to {_name::%loop-value-1%::%loop-index%::name}
+				add field "%loop-number%.", with value "%{_latestname::%loop-number%}%: %{_stats::dreamlo::leaderboard::entry::%loop-value%::score}%", split true to embed "Statistics"
+			send embed "Statistics" to channel "458386498484436992" with "Bot"
+			clear embed "Statistics"
+		else if {_command} starts with "/scen":
+			set {_scenario} to event-string
+			replace all "/scen " in {_scenario} with ""
+			set {_url} to "http://gsx2json.com/api?id=1tCw8EtCRmc5twBDKQy6IvfYZcKVSXnowVQ0_WKTSygw"
+			replace all "§" in {_url} with "&"
+			send a request to {_url} with headers "User-agent: postbot69420"
+			map json last http response's body to {_scenariocmd::*}
+			if {_args::2} is not set:
+				create embed "Statistics"
+				set color of embed "Statistics" to "green"
+				add field "Scenario List:", with value "%{_scenariocmd::columns::scenarios::*}%", split true to embed "Statistics"
+				send embed "Statistics" to channel "458386498484436992" with "Bot"
+				clear embed "Statistics"
+			else:
+				loop 50 times:
+					if {_scenariocmd::rows::%loop-number%::scenarios} is {_scenario}:
+						create embed "Statistics"
+						set color of embed "Statistics" to "green"
+						add field "Gamemode:", with value "%{_scenariocmd::rows::%loop-number%::scenarios}%", split true to embed "Statistics"
+						add field "Description:", with value "%{_scenariocmd::rows::%loop-number%::description}%", split true to embed "Statistics"
+						send embed "Statistics" to channel "458386498484436992" with "Bot"
+						clear embed "Statistics"
+						stop
+				create embed "Statistics"
+				set color of embed "Statistics" to "red"
+				add field "Error:", with value "Gamemode not on 2.0 Donkeys!", split true to embed "Statistics"
+				send embed "Statistics" to channel "458386498484436992" with "Bot"
+				clear embed "Statistics"

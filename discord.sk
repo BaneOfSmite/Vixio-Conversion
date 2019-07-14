@@ -1,0 +1,169 @@
+options:
+	Link: https://c.uhc.gg/##/post/
+	URL: http://dreamlo.com/lb/
+
+command /clearmatchpostvariables:
+	trigger:
+		loop {matchpost::*}:
+			delete {matchpost::%loop-index%::opendate}
+			delete {matchpost::%loop-index%}
+
+import:
+	java.time.LocalDateTime
+	java.time.ZoneId
+	java.time.format.DateTimeFormatter
+
+on load:
+	login to user with token "#Token" with name "Bot"
+	$ thread
+	set {_text} to text from "http://worldclockapi.com/api/json/utc/now"
+	set {_text::*} to {_text} split at ""
+	set {_time} to "%{_text::31}%%{_text::32}%%{_text::33}%%{_text::34}%%{_text::36}%%{_text::37}%%{_text::39}%%{_text::40}%" parsed as an integer
+	loop {matchpost::*}:
+		if {_time} is greater than {matchpost::%loop-index%::opendate}:
+			delete {matchpost::%loop-index%::opendate}
+			delete {matchpost::%loop-index%}
+   
+every 5 minutes:
+	if {spawnlocation} is set:
+		set {_url} to "https://hosts.uhc.gg/api/matches/upcoming"
+		replace all "§" in {_url} with "&"
+		send a request to {_url} with headers "User-agent: postbot69420"
+		map json last http response's body to {_l::*}
+		set {_url} to "http://worldclockapi.com/api/json/utc/now"
+		replace all "§" in {_url} with "&"
+		send a request to {_url} with headers "User-agent: postbot69420"
+		set {_currenttimedateraw} to last http response's body
+		set {_timenow::*} to {_currenttimedateraw} split at ""
+		set {_currenttndnow} to "%{_timenow::31}%%{_timenow::32}%%{_timenow::33}%%{_timenow::34}%/%{_timenow::36}%%{_timenow::37}%/%{_timenow::39}%%{_timenow::40}% %{_timenow::42}%%{_timenow::43}%:%{_timenow::45}%%{_timenow::46}%:00" #YYYY/MM/DD HH:MM:SS
+		set {_localdatetime} to LocalDateTime.parse({_currenttndnow}, DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"))
+		set {_milict} to {_localdatetime}.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+		if {_l::*} is set:
+			loop {_l::*}:
+				if {_l::%loop-index%::ip} contains "5.135.198.176:25581" or "192.99.47.117:26571" or "2donkeys.net":
+					if {_l::%loop-index%::removed} is true:
+						set {matchpost::%{_l::%loop-index%::id}%} to true
+					if {matchpost::%{_l::%loop-index%::id}%} is not set:
+						set {_text::*} to {_l::%loop-index%::opens} split at ""
+						set {_gametimecompare} to "%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}%/%{_text::6}%%{_text::7}%/%{_text::9}%%{_text::10}% %{_text::12}%%{_text::13}%:%{_text::15}%%{_text::16}%:00" #HHMMSS
+						set {_localdatetimegame} to LocalDateTime.parse({_gametimecompare}, DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"))
+						set {_miligt} to {_localdatetimegame}.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+						add 1800000 to {_milict}
+						if {_milict} is more than {_miligt}:
+							set {_time} to "%{_text::9}%%{_text::10}%%{_text::8}%%{_text::6}%%{_text::7}%%{_text::5}%%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}% | %{_text::12}%%{_text::13}%%{_text::14}%%{_text::15}%%{_text::16}%"
+							if {_l::%loop-index%::scenarios} is true:
+								loop {_l::%loop-index%::scenarios::*}:
+									add "%loop-value-2%" to {_scenarios::*}
+								if {_l::%loop-index%::teams} is set:
+									if {_l::%loop-index%::teams} is "ffa":
+										set {_tempteam} to "FFA"
+									else if {_l::%loop-index%::teams} is "chosen":
+										set {_tempteam} to "c"
+									else if {_l::%loop-index%::teams} is "random":
+										set {_tempteam} to "r"
+									else:
+										set {_tempteam} to "%{_l::%loop-index%::teams}%"
+								if {_l::%loop-index%::hostingname} is not set:
+									set {_postname} to "%{_l::%loop-index%::author}%"
+								else:
+									set {_postname} to "%{_l::%loop-index%::hostingname}%"
+								if {_l::%loop-index%::size} is set:
+									discord send message "@here" to channel with id "291878099749044224" as bot "Bot"
+									create embed "matchpost"
+									set title of embed "matchpost" to "Upcoming Match!"
+									set color of embed "matchpost" to "YELLOW" 
+									add field "Region & Version", with value "%{_l::%loop-index%::region}% | %{_l::%loop-index%::version}%", split true to embed "matchpost"
+									add field "Host", with value "%{_postname}%'s ##%{_l::%loop-index%::count}%", split true to embed "matchpost"
+									add field "TeamSize & Gamemodes", with value "%{_tempteam}%to%{_l::%loop-index%::size}% - %{_scenarios::*}%", split true to embed "matchpost"
+									add field "Matchpost", with value "{@Link}%{_l::%loop-index%::id}%", split true to embed "matchpost"
+									add field "Opens", with value "%{_time}% UTC", split true to embed "matchpost"
+									add field "IP", with value "__%{_l::%loop-index%::ip}%__", split true to embed "matchpost"
+									set footer of embed "matchpost" to "Developed by BaneOfSmite & lolitsvictor" 
+									set thumbnail of embed "matchpost" to "https://i.imgur.com/yJZIWXB.png"
+									send embed "matchpost" to channel "291878099749044224" with "Bot"
+									clear embed "matchpost"
+								else:
+									discord send message "@here" to channel with id "291878099749044224" as bot "Bot"
+									create embed "matchpost"
+									set title of embed "matchpost" to "Upcoming Match!"
+									set color of embed "matchpost" to "YELLOW" 
+									add field "Region & Version", with value "%{_l::%loop-index%::region}% | %{_l::%loop-index%::version}%", split true to embed "matchpost"
+									add field "Host", with value "%{_postname}%'s ##%{_l::%loop-index%::count}%", split true to embed "matchpost"
+									add field "TeamSize & Gamemodes", with value "%{_tempteam}% - %{_scenarios::*}%", split true to embed "matchpost"
+									add field "Matchpost", with value "{@Link}%{_l::%loop-index%::id}%", split true to embed "matchpost"
+									add field "Opens", with value "%{_time}% UTC", split true to embed "matchpost"
+									add field "IP", with value "__%{_l::%loop-index%::ip}%__", split true to embed "matchpost"
+									set footer of embed "matchpost" to "Developed by BaneOfSmite & lolitsvictor" 
+									set thumbnail of embed "matchpost" to "https://i.imgur.com/yJZIWXB.png"
+									send embed "matchpost" to channel "291878099749044224" with "Bot"
+									clear embed "matchpost"
+								set {matchpost::%{_l::%loop-index%::id}%} to true
+								set {matchpost::%{_l::%loop-index%::id}%::opendate} to "%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}%%{_text::6}%%{_text::7}%%{_text::9}%%{_text::10}%" parsed as an integer
+								add 1 to {matchpost::%{_l::%loop-index%::id}%::opendate}
+								delete {_scenarios::*}
+				else if {_l::%loop-index%::address} contains "5.135.198.176:25581" or "192.99.47.117:26571" or "2donkeys.net":
+					if {_l::%loop-index%::removed} is true:
+						set {matchpost::%{_l::%loop-index%::id}%} to true
+					if {matchpost::%{_l::%loop-index%::id}%} is not set:
+						set {_text::*} to {_l::%loop-index%::opens} split at ""
+						set {_gametimecompare} to "%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}%/%{_text::6}%%{_text::7}%/%{_text::9}%%{_text::10}% %{_text::12}%%{_text::13}%:%{_text::15}%%{_text::16}%:00" #HHMMSS
+						set {_localdatetimegame} to LocalDateTime.parse({_gametimecompare}, DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"))
+						set {_miligt} to {_localdatetimegame}.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+						add 1800000 to {_milict}
+						if {_milict} is more than {_miligt}:
+							set {_time} to "%{_text::9}%%{_text::10}%%{_text::8}%%{_text::6}%%{_text::7}%%{_text::5}%%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}% | %{_text::12}%%{_text::13}%%{_text::14}%%{_text::15}%%{_text::16}%"
+							if {_l::%loop-index%::scenarios} is true:
+								loop {_l::%loop-index%::scenarios::*}:
+									add "%loop-value-2%" to {_scenarios::*}
+								if {_l::%loop-index%::teams} is set:
+									if {_l::%loop-index%::teams} is "ffa":
+										set {_tempteam} to "FFA"
+									else if {_l::%loop-index%::teams} is "chosen":
+										set {_tempteam} to "c"
+									else if {_l::%loop-index%::teams} is "random":
+										set {_tempteam} to "r"
+									else:
+										set {_tempteam} to "%{_l::%loop-index%::teams}%"
+								if {_l::%loop-index%::hostingname} is not set:
+									set {_postname} to "%{_l::%loop-index%::author}%"
+								else:
+									set {_postname} to "%{_l::%loop-index%::hostingname}%"
+								if {_l::%loop-index%::size} is set:
+									discord send message "@here" to channel with id "291878099749044224" as bot "Bot"
+									create embed "matchpost"
+									set title of embed "matchpost" to "Upcoming Match!"
+									set color of embed "matchpost" to "YELLOW" 
+									add field "Region & Version", with value "%{_l::%loop-index%::region}% | %{_l::%loop-index%::version}%", split true to embed "matchpost"
+									add field "Host", with value "%{_postname}%'s ##%{_l::%loop-index%::count}%", split true to embed "matchpost"
+									add field "TeamSize & Gamemodes", with value "%{_tempteam}%to%{_l::%loop-index%::size}% - %{_scenarios::*}%", split true to embed "matchpost"
+									add field "Matchpost", with value "{@Link}%{_l::%loop-index%::id}%", split true to embed "matchpost"
+									add field "Opens", with value "%{_time}% UTC", split true to embed "matchpost"
+									add field "IP", with value "__%{_l::%loop-index%::address}%__", split true to embed "matchpost"
+									set footer of embed "matchpost" to "Developed by BaneOfSmite & lolitsvictor" 
+									set thumbnail of embed "matchpost" to "https://i.imgur.com/yJZIWXB.png"
+									send embed "matchpost" to channel "291878099749044224" with "Bot"
+									clear embed "matchpost"
+								else:
+									discord send message "@here" to channel with id "291878099749044224" as bot "Bot"
+									create embed "matchpost"
+									set title of embed "matchpost" to "Upcoming Match!"
+									set color of embed "matchpost" to "YELLOW" 
+									add field "Region & Version", with value "%{_l::%loop-index%::region}% | %{_l::%loop-index%::version}%", split true to embed "matchpost"
+									add field "Host", with value "%{_postname}%'s ##%{_l::%loop-index%::count}%", split true to embed "matchpost"
+									add field "TeamSize & Gamemodes", with value "%{_tempteam}% - %{_scenarios::*}%", split true to embed "matchpost"
+									add field "Matchpost", with value "{@Link}%{_l::%loop-index%::id}%", split true to embed "matchpost"
+									add field "Opens", with value "%{_time}% UTC", split true to embed "matchpost"
+									add field "IP", with value "__%{_l::%loop-index%::address}%__", split true to embed "matchpost"
+									set footer of embed "matchpost" to "Developed by BaneOfSmite & lolitsvictor" 
+									set thumbnail of embed "matchpost" to "https://i.imgur.com/yJZIWXB.png"
+									send embed "matchpost" to channel "291878099749044224" with "Bot"
+									clear embed "matchpost"
+								set {matchpost::%{_l::%loop-index%::id}%} to true
+								set {matchpost::%{_l::%loop-index%::id}%::opendate} to "%{_text::1}%%{_text::2}%%{_text::3}%%{_text::4}%%{_text::6}%%{_text::7}%%{_text::9}%%{_text::10}%" parsed as an integer
+								add 1 to {matchpost::%{_l::%loop-index%::id}%::opendate}
+								delete {_scenarios::*}
+							
+discord guild member join seen by "Bot":
+	discord give role "Member" to user "%event-user%" in guild "%event-guild%" with "Bot"
